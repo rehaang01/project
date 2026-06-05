@@ -16,5 +16,6 @@ flipkart_traffic_demand_source.tar.gz
 # Experiment / sweep submission CSVs — keep only the final ones (whitelisted below)
 submissions/*
 !submissions/submission.csv
+!submissions/submission_highscore.csv
 !submissions/submission_robust.csv
 !submissions/submission_memo.csv

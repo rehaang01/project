@@ -36,8 +36,9 @@ TE_SPECS = [
 ]
 TE_NAMES = [s[0] for s in TE_SPECS]
 
-# Derived + frequency features that are safe to take from the fit set directly.
-DERIVED_NAMES = ["d48_shift_adj", "geo_count"]
+# Derived features (order MUST match the order they are added in _transform).
+DERIVED_NAMES = ["d48_shift_adj", "geo_count", "mult_geo_p5hr", "mult_geo_roadhr"]
+MULT_NAMES = ["mult_geo_p5hr", "mult_geo_roadhr"]
 
 FEATURE_NAMES = F.BASE_NUMERIC + TE_NAMES + DERIVED_NAMES
 
@@ -45,8 +46,10 @@ FEATURE_NAMES = F.BASE_NUMERIC + TE_NAMES + DERIVED_NAMES
 # ROBUST_SET maximizes the faithful forward metric (H1) AND the spatial guardrail (H3); finer
 # memorization features only help the optimistic same-day H2 and hurt forward generalization.
 ROBUST_SET = F.BASE_NUMERIC + ["te_p5", "te_p4", "te_road", "te_road_hour"]
-# MEMO_SET kept for the diagnostic A/B submission (do NOT use as primary).
+# MEMO_SET = honest daytime-memorization features (board ~88.3-88.4).
 MEMO_SET = ROBUST_SET + ["te_geo", "te_geohr", "te_slot", "d48_shift_adj", "geo_count"]
+# MEMO_PLUS adds the multiplicative E[demand|geohash,time] estimates (push toward the ~0.90 ceiling).
+MEMO_PLUS = MEMO_SET + MULT_NAMES
 
 
 # Global smoothing multiplier. <1 => memorize harder (lighter shrinkage toward the mean).
@@ -90,6 +93,12 @@ def _transform(txf: pd.DataFrame, state: dict) -> pd.DataFrame:
     # derived
     out["d48_shift_adj"] = 0.032 + 1.255 * out["te_slot"]
     out["geo_count"] = txf["geohash"].map(state["geo_count"]).fillna(0.0)
+    # multiplicative estimates of E[demand | geohash, time]: geohash level x time-shape.
+    # Borrows strength (geo level from ~55 obs, shape from a whole region/road) -> low-variance
+    # estimate even for sparse cells; targets the ~0.90 honest ceiling.
+    eps = 1e-4
+    out["mult_geo_p5hr"] = out["te_geo"] * out["te_p5_hour"] / (out["te_p5"] + eps)
+    out["mult_geo_roadhr"] = out["te_geo"] * out["te_road_hour"] / (out["te_road"] + eps)
     return out
 
 
