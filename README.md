@@ -7,7 +7,7 @@ Solution for the **Traffic Demand Prediction** challenge (Flipkart R1). Predict 
 
 | Model | What it is | Leaderboard | Script |
 |---|---|---|---|
-| **High-score** (`submission_highscore.csv`) | calibrated LightGBM×2 + CatBoost ensemble exploiting day-to-day pattern repetition | **88.78** | `src/final_model.py` |
+| **High-score** (`submission_highscore.csv`) | NNLS-stacked LightGBM×2 + CatBoost ensemble exploiting day-to-day pattern repetition | **88.96** | `src/final_model.py` |
 | Robust (`submission_robust.csv`) | regularized model that generalizes to unseen locations | 78.6 | `src/finalize.py` |
 
 Both use **only the provided training data** — no external data, no leak.
@@ -17,7 +17,8 @@ Both use **only the provided training data** — no external data, no leak.
 A spatio-temporal forecast: predict day-49 daytime demand from day-48 history for mostly-seen locations.
 **Daytime demand repeats strongly from the previous day**, so honestly modeling the day-48 spatio-temporal
 pattern (the *expected* per-geohash-per-time demand, denoised by a gradient-boosted ensemble) is the
-dominant signal — taking the score from a robust 78.6 baseline to **88.8**.
+dominant signal — taking the score from a robust 78.6 baseline to **88.96** (an NNLS meta-learner over
+LightGBM×2 + CatBoost added the final +0.18 over a hand-tuned blend).
 
 A literal R²=1.0 is **not honestly reachable**: the raw exact-day-48 value scores only ~79.6, proving
 genuine day-to-day drift (honest ceiling ≈ 0.90). The leaderboard's 100s require the external source
